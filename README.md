@@ -40,9 +40,9 @@
   * 蜂鸣器报警引脚 -> `GPIO 12`
 - [ ] **前后端接口约定 (API Contract)**：
   * **GET `/api/status`** (前端拉取当前状态)：
-    * 约定返回 JSON 格式：`{"temp": 26.5, "humi": 60.0, "mode": "AUTO", "fan_status": "OFF", "alarm": false}`
+    * 约定返回 JSON 格式：`{"temperature": 26.5, "humidity": 60.0, "mode": "AUTO", "fan_state": false, "intrusion_alert": false}`
   * **POST `/api/control`** (前端下发控制指令)：
-    * 约定发送数据：`cmd=auto` 或 `cmd=on` 或 `cmd=off`
+    * 约定发送 JSON 数据：`{"cmd":"auto"}` 或 `{"cmd":"on"}` 或 `{"cmd":"off"}`
 #### 详情见docs目录
 
 ### 第一阶段：物理连接与环境搭建 (Hardware Layer)

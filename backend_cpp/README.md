@@ -2,6 +2,18 @@
 
 这里存放 ESP8266/ESP32 的核心逻辑代码、状态机实现以及 Web API 接口代码。
 
+## 阶段零目标
+本目录在阶段零只做契约对齐，不写业务实现。后续代码必须严格遵守以下文档：
+* `docs/hardware_interface.md`
+* `docs/api_protocol.md`
+* `docs/logic_fsm.md`
+* `docs/env_setup.md`
+
+## 当前工程骨架
+* `platformio.ini`: ESP32 PlatformIO 工程配置
+* `include/app_config.h`: 引脚、阈值、Wi-Fi 占位配置
+* `src/main.cpp`: Web API、FSM、传感器轮询、报警逻辑入口
+
 ## 后端开发基础注意事项
 1. **保护隐私信息**：代码中涉及到 Wi-Fi 名称（SSID）和密码的地方，提交到 GitHub 前请务必改成 `Your_SSID` 等占位符，**绝对不要把真实的密码上传到公开代码库**！
 2. **非阻塞设计**：主循环 `loop()` 中严禁使用 `delay()` 函数，必须使用 `millis()` 进行时间差轮询，否则会导致 Web 服务器卡顿，无法响应前端请求。
