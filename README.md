@@ -83,15 +83,21 @@
 
 ### 4.2 开发流程
 1.  **Pull**: 每天开始写代码前先执行 `git pull` 同步队友进度。
-2.  **Branch**: 严禁在 `main` 分支直接改代码。请创建新分支：`人名/功能`（如 `liutao/feat-api`）。
+2.  **Branch**: 严禁在 `main` 分支直接改代码。请创建新分支：`人名/功能`（如 `liutaobo/feat-api`）。
 3.  **PR**: 完成代码后，在网页端发起 **Pull Request**，由至少一名其他队友 Review 后合并。
 
 ---
 
 ## 5. 目录结构
+
 ```text
 .
-├── hardware_docs/       # 接线图、原理图、PDF手册
-├── backend_cpp/         # ESP32 C++ 源代码 (.ino / .cpp)
-├── frontend_web/        # HTML/CSS/JS 前端资源
-└── README.md            # 本项目说明文档
+├── docs/                # 项目核心协议与规范文档
+│   ├── hardware_interface.md # 硬件接口与接线协议
+│   ├── api_protocol.md       # 前后端通信协议
+│   ├── logic_fsm.md          # 状态机与核心逻辑规范
+│   └── env_setup.md          # 开发环境与依赖库规范
+├── hardware_docs/       # 接线照片、电路图、PDF手册等实物资料
+├── backend_cpp/         # ESP32 后端 C++ 源代码 (.ino / .cpp)
+├── frontend_web/        # 前端可视化面板 HTML/CSS/JS 资源
+└── README.md            # 本项目主说明文档与导航
