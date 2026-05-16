@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>智能环境监控系统</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: linear-gradient(135deg, #1a2a6c 0%, #2a4858 100%);
+      min-height: 100vh;
+      padding: 20px;
+      color: #fff;
+    }
+    .container { max-width: 800px; margin: 0 auto; }
+    .header { text-align: center; margin-bottom: 30px; }
+    .header h1 { font-size: 2rem; font-weight: 600; margin-bottom: 8px; }
+    .header .subtitle { font-size: 0.9rem; opacity: 0.8; }
+    .card-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 16px;
+      margin-bottom: 20px;
+    }
+    .card {
+      background: rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(10px);
+      border-radius: 16px;
+      padding: 24px;
+      text-align: center;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .card:hover { transform: translateY(-2px); box-shadow: 0 8px 25px rgba(0,0,0,0.2); }
+    .card .icon { font-size: 2.5rem; margin-bottom: 8px; }
+    .card .label { font-size: 0.85rem; opacity: 0.8; margin-bottom: 8px; }
+    .card .value { font-size: 2rem; font-weight: 700; }
+    .card .unit { font-size: 1rem; font-weight: 400; opacity: 0.7; }
+    .card.status-on { background: rgba(76,175,80,0.3); border: 2px solid #4caf50; }
+    .card.status-off { background: rgba(158,158,158,0.2); border: 2px solid #9e9e9e; }
+    .card.alert-active {
+      background: rgba(244,67,54,0.3);
+      border: 2px solid #f44336;
+      animation: alert-flash 0.5s infinite;
+    }
+    @keyframes alert-flash {
+      0%,100% { background: rgba(244,67,54,0.3); }
+      50% { background: rgba(244,67,54,0.6); }
+    }
+    .mode-display {
+      background: rgba(255,255,255,0.1);
+      backdrop-filter: blur(10px);
+      border-radius: 12px;
+      padding: 16px;
+      text-align: center;
+      margin-bottom: 20px;
+    }
+    .mode-display .mode-label { font-size: 0.85rem; opacity: 0.8; margin-bottom: 4px; }
+    .mode-display .mode-value { font-size: 1.5rem; font-weight: 700; }
+    .mode-value.mode-auto { color: #2196f3; }
+    .mode-value.mode-manual-on { color: #ff9800; }
+    .mode-value.mode-manual-off { color: #9c27b0; }
+    .control-panel {
+      display: flex;
+      gap: 12px;
+      justify-content: center;
+      flex-wrap: wrap;
+      margin-bottom: 20px;
+    }
+    .btn {
+      padding: 14px 28px;
+      border: none;
+      border-radius: 10px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      min-width: 110px;
+    }
+    .btn:active { transform: scale(0.96); }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    .btn-auto { background: #2196f3; color: #fff; }
+    .btn-auto:hover:not(:disabled) { background: #1976d2; }
+    .btn-auto.active { background: #0d47a1; box-shadow: 0 0 15px rgba(33,150,243,0.6); }
+    .btn-on { background: #ff9800; color: #fff; }
+    .btn-on:hover:not(:disabled) { background: #f57c00; }
+    .btn-on.active { background: #e65100; box-shadow: 0 0 15px rgba(255,152,0,0.6); }
+    .btn-off { background: #9c27b0; color: #fff; }
+    .btn-off:hover:not(:disabled) { background: #7b1fa2; }
+    .btn-off.active { background: #4a148c; box-shadow: 0 0 15px rgba(156,39,176,0.6); }
+    .status-bar { text-align: center; font-size: 0.85rem; opacity: 0.7; }
+    .network-error {
+      background: rgba(244,67,54,0.9);
+      color: #fff;
+      padding: 12px;
+      border-radius: 8px;
+      text-align: center;
+      margin-bottom: 20px;
+      display: none;
+    }
+    .network-error.show { display: block; }
+    .temp-high { color: #f44336; }
+    .humi-high { color: #ff9800; }
+    @media (max-width: 480px) {
+      .card-grid { grid-template-columns: 1fr; }
+      .control-panel { flex-direction: column; }
+      .btn { width: 100%; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>🌡️ 智能环境监控系统</h1>
+      <div class="subtitle">ESP32 环境数据实时监控</div>
+    </div>
+    <div class="network-error" id="networkError">⚠️ 网络异常，请检查连接</div>
+    <div class="card-grid">
+      <div class="card" id="tempCard">
+        <div class="icon">🌡️</div>
+        <div class="label">温度</div>
+        <div class="value" id="temperature">--.-</div>
+        <div class="unit">°C</div>
+      </div>
+      <div class="card" id="humiCard">
+        <div class="icon">💧</div>
+        <div class="label">湿度</div>
+        <div class="value" id="humidity">--.-</div>
+        <div class="unit">%</div>
+      </div>
+      <div class="card status-off" id="fanCard">
+        <div class="icon">🌀</div>
+        <div class="label">风扇状态</div>
+        <div class="value" id="fanState">--</div>
+      </div>
+      <div class="card" id="alertCard">
+        <div class="icon">🔔</div>
+        <div class="label">报警状态</div>
+        <div class="value" id="alertState">--</div>
+      </div>
+    </div>
+    <div class="mode-display">
+      <div class="mode-label">当前模式</div>
+      <div class="mode-value mode-auto" id="modeValue">AUTO</div>
+    </div>
+    <div class="control-panel">
+      <button class="btn btn-auto active" id="btnAuto" onclick="setMode('auto')">自动模式</button>
+      <button class="btn btn-on" id="btnOn" onclick="setMode('on')">强制开启</button>
+      <button class="btn btn-off" id="btnOff" onclick="setMode('off')">强制关闭</button>
+    </div>
+    <div class="status-bar">最后更新: <span id="lastUpdate">--</span></div>
+  </div>
+  <script>
+    const CONFIG = {
+      API_BASE: '',
+      POLL_INTERVAL: 3000
+    };
+
+    const API = {
+      async getStatus() {
+        const response = await fetch(`${CONFIG.API_BASE}/api/status`);
+        if (!response.ok) throw new Error('Network response was not ok');
+        return response.json();
+      },
+      async postControl(cmd) {
+        const response = await fetch(`${CONFIG.API_BASE}/api/control`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ cmd })
+        });
+        if (!response.ok) throw new Error('Network response was not ok');
+        return response.json();
+      }
+    };
+
+    let isUpdating = false;
+    let debounceTimer = null;
+
+    function formatTime(date) {
+      const y = date.getFullYear();
+      const mo = String(date.getMonth() + 1).padStart(2, '0');
+      const d = String(date.getDate()).padStart(2, '0');
+      const h = String(date.getHours()).padStart(2, '0');
+      const mi = String(date.getMinutes()).padStart(2, '0');
+      const s = String(date.getSeconds()).padStart(2, '0');
+      return `${y}-${mo}-${d} ${h}:${mi}:${s}`;
+    }
+
+    function updateUI(data) {
+      const tempEl = document.getElementById('temperature');
+      const humiEl = document.getElementById('humidity');
+      const fanCard = document.getElementById('fanCard');
+      const fanStateEl = document.getElementById('fanState');
+      const alertCard = document.getElementById('alertCard');
+      const alertStateEl = document.getElementById('alertState');
+      const modeValue = document.getElementById('modeValue');
+      const btnAuto = document.getElementById('btnAuto');
+      const btnOn = document.getElementById('btnOn');
+      const btnOff = document.getElementById('btnOff');
+
+      tempEl.textContent = data.temperature.toFixed(1);
+      humiEl.textContent = data.humidity.toFixed(1);
+
+      tempEl.classList.toggle('temp-high', data.temperature >= 30);
+      humiEl.classList.toggle('humi-high', data.humidity >= 70);
+
+      if (data.fan_state) {
+        fanCard.className = 'card status-on';
+        fanStateEl.textContent = 'ON';
+      } else {
+        fanCard.className = 'card status-off';
+        fanStateEl.textContent = 'OFF';
+      }
+
+      if (data.intrusion_alert) {
+        alertCard.className = 'card alert-active';
+        alertStateEl.textContent = '⚠️ 警报';
+      } else {
+        alertCard.className = 'card';
+        alertStateEl.textContent = '正常';
+      }
+
+      modeValue.textContent = data.mode;
+      modeValue.className = 'mode-value';
+      if (data.mode === 'AUTO') modeValue.classList.add('mode-auto');
+      else if (data.mode === 'MANUAL_ON') modeValue.classList.add('mode-manual-on');
+      else if (data.mode === 'MANUAL_OFF') modeValue.classList.add('mode-manual-off');
+
+      btnAuto.classList.toggle('active', data.mode === 'AUTO');
+      btnOn.classList.toggle('active', data.mode === 'MANUAL_ON');
+      btnOff.classList.toggle('active', data.mode === 'MANUAL_OFF');
+
+      document.getElementById('lastUpdate').textContent = formatTime(new Date());
+      document.getElementById('networkError').classList.remove('show');
+    }
+
+    function showError() {
+      document.getElementById('networkError').classList.add('show');
+    }
+
+    async function fetchStatus() {
+      if (isUpdating) return;
+      isUpdating = true;
+      try {
+        const data = await API.getStatus();
+        updateUI(data);
+      } catch (error) {
+        console.error('Failed to fetch status:', error);
+        showError();
+      } finally {
+        isUpdating = false;
+      }
+    }
+
+    async function setMode(cmd) {
+      if (debounceTimer) return;
+      debounceTimer = setTimeout(() => { debounceTimer = null; }, 500);
+
+      const btnAuto = document.getElementById('btnAuto');
+      const btnOn = document.getElementById('btnOn');
+      const btnOff = document.getElementById('btnOff');
+
+      btnAuto.disabled = btnOn.disabled = btnOff.disabled = true;
+
+      try {
+        const response = await API.postControl(cmd);
+        if (response.success) await fetchStatus();
+      } catch (error) {
+        console.error('Failed to set mode:', error);
+        showError();
+      } finally {
+        btnAuto.disabled = btnOn.disabled = btnOff.disabled = false;
+      }
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      fetchStatus();
+      setInterval(fetchStatus, CONFIG.POLL_INTERVAL);
+    });
+  </script>
+</body>
+</html>
